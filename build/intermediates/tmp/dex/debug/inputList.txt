@@ -1,0 +1,3 @@
+/home/kyle/AndroidStudio/workspace/app/build/intermediates/classes/debug
+/home/kyle/AndroidStudio/workspace/app/build/intermediates/pre-dexed/debug/json-simple-1.1.1-92a9f59333a0a7148e36487e1d7807ebb7f07aba.jar
+/home/kyle/AndroidStudio/workspace/app/build/intermediates/pre-dexed/debug/support-v4-19.1.0-36a7dd9efbfd90ce4837fdbf79dad42fde2b772d.jar

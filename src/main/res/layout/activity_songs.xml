@@ -1,0 +1,99 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/parent_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+    
+    <ImageView
+        android:id="@+id/album_image"
+        android:layout_height="150dp"
+        android:layout_width="fill_parent"
+        android:gravity="center_horizontal"
+        android:background="#0099C9"
+        android:scaleType="centerCrop" />
+    
+    <TextView
+        android:id="@+id/artist_text"
+        android:layout_width="fill_parent"
+        android:layout_height="30dp"
+        android:layout_alignBottom="@id/album_image"
+        android:textColor="#E2F4FB"
+        android:gravity="center|bottom"
+        android:textSize="15sp"
+        android:padding="5dp" >
+    </TextView>
+    
+    <TextView
+        android:id="@+id/album_text"
+        android:layout_width="fill_parent"
+        android:layout_height="35dp"
+        android:layout_above="@id/artist_text"
+        android:textColor="#E2F4FB"
+        android:gravity="center|top"
+        android:textSize="25sp" >
+    </TextView>
+    
+    <LinearLayout
+        android:id="@+id/player_layout"
+        android:layout_width="match_parent"
+    	android:layout_height="55dp"
+    	android:orientation="horizontal"
+    	android:layout_alignParentBottom="true"
+    	android:paddingTop="5dp" >
+    	
+        <Button
+        	android:id="@+id/previous_button"
+        	android:layout_height="45dp"
+        	android:layout_width="55dp"
+        	android:onClick="onClick" />
+        
+        <Button
+        	android:id="@+id/toggle_button"
+        	android:layout_height="45dp"
+        	android:layout_width="55dp"
+        	android:onClick="onClick" />
+        
+        <Button
+	        android:id="@+id/next_button"
+       		android:layout_height="45dp"
+        	android:layout_width="55dp"
+        	android:onClick="onClick" />
+        
+         <LinearLayout
+        	android:id="@+id/text_layout"
+        	android:layout_width="match_parent"
+    		android:layout_height="55dp"
+    		android:orientation="vertical"
+    		android:layout_alignParentBottom="true" >
+    		
+         	<TextView
+	        	android:id="@+id/playing_text"
+    	    	android:layout_height="25dp"
+        		android:layout_width="fill_parent"
+        		android:gravity="left|center"
+        		android:textColor="#E2F4FB"
+        		android:textSize="15sp" >
+    		</TextView>
+    	
+        	<TextView
+        		android:id="@+id/percent_text"
+        		android:layout_height="wrap_content"
+        		android:layout_width="fill_parent"
+        		android:gravity="left|center"
+        		android:textColor="#E2F4FB"
+        		android:textSize="15sp"
+        		android:layout_below="@id/playing_text" >
+    		</TextView>
+             
+    	</LinearLayout>
+        
+    </LinearLayout>
+    
+    <ListView
+        android:id="@android:id/list"
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        android:layout_below="@id/album_image"
+        android:layout_above="@id/player_layout"
+        android:background="#003242" />
+    		
+</RelativeLayout>

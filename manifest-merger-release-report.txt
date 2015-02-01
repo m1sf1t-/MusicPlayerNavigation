@@ -111,7 +111,7 @@ service#com.example.musicplayernavigation.PlayerService
 ADDED from AndroidManifest.xml:64:9
 	android:name
 		ADDED from AndroidManifest.xml:64:18
-service#com.example.musicplayernavigation.UpdateLibraryService
+service#com.example.musicplayernavigation.LibraryService
 ADDED from AndroidManifest.xml:65:9
 	android:name
 		ADDED from AndroidManifest.xml:65:18

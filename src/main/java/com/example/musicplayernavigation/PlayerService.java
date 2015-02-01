@@ -7,6 +7,7 @@ import android.media.MediaPlayer.OnBufferingUpdateListener;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnErrorListener;
 import android.media.MediaPlayer.OnPreparedListener;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
@@ -48,11 +49,19 @@ public class PlayerService extends Service implements OnErrorListener,
 		return START_STICKY;
 	}
 	
-	public void initialiseMediaPlayer(String songUrl, String songTitle){
+	public void initialiseMediaPlayer(String songUri, String localUri, String songTitle){
 
-        songUrl = songUrl.replace("''", "'");
+        String uri;
 
-		this.songUrl = songUrl;
+        if(localUri == null || localUri.equals("")){
+            uri = songUri;
+        }else{
+            uri = localUri;
+        }
+
+        uri = uri.replace("''", "'");
+
+		this.songUrl = uri;
 		this.songTitle = songTitle;
 		
 		if(mediaPlayer == null){
@@ -67,7 +76,7 @@ public class PlayerService extends Service implements OnErrorListener,
 		mediaPlayer.setOnPreparedListener(this);
 		
 		try{
-			mediaPlayer.setDataSource(songUrl);
+			mediaPlayer.setDataSource(this, Uri.parse(uri));
 			mediaPlayer.prepareAsync();
 		}catch(IOException e){
 			Log.v("PLAYER SERVICE", e.getMessage());
@@ -98,14 +107,17 @@ public class PlayerService extends Service implements OnErrorListener,
 		switch(what){
 		case MediaPlayer.MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK:
 			Log.v("ERROR", "MEDIA ERROR NOT VALID FOR PROGRESSIVE PLAYBACK" + extra);
+            Toast.makeText(this, "Couldn't play song - " + extra, Toast.LENGTH_SHORT).show();
 			break;
 		
 		case MediaPlayer.MEDIA_ERROR_SERVER_DIED:
 			Log.v("ERROR", "MEDIA ERROR SERVER DIED" + extra);
+            Toast.makeText(this, "Couldn't play song - " + extra, Toast.LENGTH_SHORT).show();
 			break;
 			
 		case MediaPlayer.MEDIA_ERROR_UNKNOWN:
 			Log.v("ERROR", "MEDIA ERROR UNKNOWN" + extra);
+            Toast.makeText(this, "Couldn't play song - " + extra, Toast.LENGTH_SHORT).show();
 			break;
 		}
 		return false;
@@ -124,6 +136,10 @@ public class PlayerService extends Service implements OnErrorListener,
 		broadcastIntent.setAction("BUFFER_UPDATE_ACTION");
 		broadcastIntent.putExtra("percent", percent);
 		getBaseContext().sendBroadcast(broadcastIntent);
+
+        if(percent == 100){
+            // TODO - save binary stream to file
+        }
 	}
 	
 	public void onPrepared(MediaPlayer mp){

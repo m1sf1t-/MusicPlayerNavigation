@@ -44,6 +44,7 @@ public class SongsActivity extends ListActivity {
 	String songUrl = "";
 	String[] songTitles;
 	String[] albumUrls;
+    String[] localUris;
 	Integer currentTrack = 0;
 
 	@Override
@@ -120,12 +121,14 @@ public class SongsActivity extends ListActivity {
 		Cursor cursor = dbAdapter.getSongsbyAlbumName(albumName);
 		int cursorLength = cursor.getCount();
 		albumUrls = new String[cursorLength];
+        localUris = new String[cursorLength];
 		songTitles = new String[cursorLength];
 		
 		for(int i = 0; i < cursorLength; i++){
 			cursor.moveToNext();
 			albumUrls[i] = cursor.getString(3);
 			songTitles[i] = cursor.getString(4);
+            localUris[i] = cursor.getString(5);
 		}
 	}
 	
@@ -140,7 +143,7 @@ public class SongsActivity extends ListActivity {
 		public void onReceive(Context context, Intent intent){
 			int percent = intent.getIntExtra("percent", 0);
 			//bufferValueTextView.setText(percent + "%");
-			percentText.setText("buffering... " + percent + "%");
+			percentText.setText("buffering " + percent + "%");
 		}
 	};
 	
@@ -170,16 +173,19 @@ public class SongsActivity extends ListActivity {
 
 		String songUrl = "";
 		String songName = "";
+        String localUri = "";
 			
 		//pass in path			
 		songUrl = c.getString(1);
 		songName = c.getString(4);
+        localUri = c.getString(5);
 
         Log.d("URL", "songUrl: " + songUrl);
 		
 		if(!serviceBinder.songUrl.equals(songUrl)){
-			serviceBinder.initialiseMediaPlayer(songUrl, songName);
+			serviceBinder.initialiseMediaPlayer(songUrl, localUri, songName);
 			toggleButton.setBackgroundResource(R.drawable.pause);
+            percentText.setText("buffering 0%");
 			playingText.setText(songName);
 		}
 		
@@ -215,7 +221,7 @@ public class SongsActivity extends ListActivity {
 
 			if(currentTrack > 0){
 				currentTrack--;
-				serviceBinder.initialiseMediaPlayer(albumUrls[currentTrack], songTitles[currentTrack]);
+				serviceBinder.initialiseMediaPlayer(albumUrls[currentTrack], localUris[currentTrack], songTitles[currentTrack]);
 				playingText.setText(songTitles[currentTrack]);
 			}
 		}else if(view == nextButton){
@@ -223,7 +229,7 @@ public class SongsActivity extends ListActivity {
 			
 			if(currentTrack < albumUrls.length -1){
 				currentTrack++;
-				serviceBinder.initialiseMediaPlayer(albumUrls[currentTrack], songTitles[currentTrack]);
+				serviceBinder.initialiseMediaPlayer(albumUrls[currentTrack], localUris[currentTrack], songTitles[currentTrack]);
 				playingText.setText(songTitles[currentTrack]);
 			}
 		}

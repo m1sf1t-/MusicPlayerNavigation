@@ -8,7 +8,13 @@
         android:minSdkVersion="14"
         android:targetSdkVersion="19" />
 
+    <permission android:name="android.permission.INTERNET" />
+
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:allowBackup="true"
@@ -63,7 +69,7 @@
         </activity>
 
         <service android:name="com.example.musicplayernavigation.PlayerService" />
-        <service android:name="com.example.musicplayernavigation.UpdateLibraryService" />
+        <service android:name="com.example.musicplayernavigation.LibraryService" />
     </application>
 
 </manifest>

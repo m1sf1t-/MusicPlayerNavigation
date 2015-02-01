@@ -85,7 +85,7 @@ public class PlayerActivity extends Activity implements OnClickListener, OnTouch
 			serviceBinder = ((PlayerService.PlayerBinder)service).getService();
 			
 			if(!songUrl.equals(serviceBinder.songUrl)){
-				serviceBinder.initialiseMediaPlayer(songUrl, "");
+				serviceBinder.initialiseMediaPlayer(songUrl, "", "");
 			}
 		}
 		

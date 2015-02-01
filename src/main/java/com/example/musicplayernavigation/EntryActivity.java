@@ -11,6 +11,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -38,16 +39,13 @@ public class EntryActivity extends Activity {
 	
 	DBAdapter dbAdapter = null;
 	ImageDBAdapter idb= null;
-	ProgressDialog progressDialog;
-	static ProgressDialog dialog = null;
-	static ProgressDialog spinnerDialog = null;
-	int jsonFileSize;
-	private InsertDBTask insertDBTask;
-	Intent intent;
 	PlayerService serviceBinder;
-    UpdateLibraryService libraryServiceBinder;
+    LibraryService libraryServiceBinder;
     private Menu menu;
     IntentFilter intentFilter;
+
+    Intent playerIntent;
+    Intent libraryIntent;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -57,21 +55,23 @@ public class EntryActivity extends Activity {
 		dbAdapter = new DBAdapter(getBaseContext()).open();
 		idb = new ImageDBAdapter(getBaseContext()).open();
 		
-		insertDBTask = new InsertDBTask();
-		
-		intent = new Intent(EntryActivity.this, PlayerService.class);
-		bindService(intent, connection, Context.BIND_AUTO_CREATE);
-		
-		startService(intent);	
+		playerIntent = new Intent(EntryActivity.this, PlayerService.class);
+		bindService(playerIntent, connection, Context.BIND_AUTO_CREATE);
+		startService(playerIntent);
+
+        libraryIntent = new Intent(EntryActivity.this, LibraryService.class);
+        startService(libraryIntent);
+        bindService(libraryIntent, libraryConnection, Context.BIND_AUTO_CREATE);
+
 	}
 	
 	@Override
 	public void onPause(){
 		super.onPause();
 		
-		if(dialog != null){
+		/*if(dialog != null){
 			EntryActivity.dialog.dismiss();
-		}
+		}*/
 	}
 
     @Override
@@ -86,12 +86,7 @@ public class EntryActivity extends Activity {
 	@Override
 	public void onDestroy(){
 		super.onDestroy();
-		
-		if(!insertDBTask.isCancelled()){
-			insertDBTask.cancel(true);
-			Log.d("CANCEL TASK", "InsertDBTask cancelled.");
-		}
-		
+
 		dbAdapter.close();
 		idb.close();
 	}
@@ -100,30 +95,30 @@ public class EntryActivity extends Activity {
 		if(view.getId() == R.id.update_button){
 			// update library
 			TextView tv = (TextView) this.findViewById(R.id.json_url);
-			String jsonUrl = tv.getText().toString();
-			
-		//	lm.updateLibrary(jsonUrl);
-			
-			updateLibrary(jsonUrl);
+			String serverUrl = tv.getText().toString();
+
+            // Do animation start
+            MenuItem item = menu.findItem(R.id.action_refresh);
+            LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            ImageView iv = (ImageView)inflater.inflate(R.layout.iv_refresh, null);
+            Animation rotation = AnimationUtils.loadAnimation(this, R.anim.rotate_refresh);
+            rotation.setRepeatCount(Animation.INFINITE);
+            iv.startAnimation(rotation);
+            item.setActionView(iv);
+
+            libraryServiceBinder.createLibrary(serverUrl);
+
+            SharedPreferences sharedPref = this.getSharedPreferences("com.example.musicplayernavigation.PREFERENCE_FILE_KEY", Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putString("server_url", serverUrl);
+            editor.putInt("current_update_id", 0);
+            editor.commit();
 	
 		}else if(view.getId() == R.id.go_button){
 			Log.d("BUTTON", "Go button clicked");
 			// load artists activity
 			Intent i = new Intent("com.example.ArtistsActivity");
 			startActivity(i);
-		}
-	}
-	
-	private void updateLibrary(String url){
-		String regex = "^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
-		if(url.matches(regex)){
-			// download JSON 
-			 new DownloadJSONTask().execute(url);
-			// show progress dialog and set loading bar to 0
-			showDialog(1);
-			progressDialog.setProgress(0);
-		}else{
-			Toast.makeText(getBaseContext(), "Please enter a valid url", Toast.LENGTH_LONG).show();
 		}
 	}
 	
@@ -143,7 +138,7 @@ public class EntryActivity extends Activity {
     private ServiceConnection libraryConnection = new ServiceConnection(){
         public void onServiceConnected(ComponentName className, IBinder service){
             // called when the connection is made
-            libraryServiceBinder = ((UpdateLibraryService.LibraryBinder)service).getService();
+            libraryServiceBinder = ((LibraryService.LibraryBinder)service).getService();
         }
 
         public void onServiceDisconnected(ComponentName className){
@@ -151,162 +146,6 @@ public class EntryActivity extends Activity {
             libraryServiceBinder = null;
         }
     };
-	
-	public class DownloadJSONTask extends AsyncTask<String, Void, String>{
-		protected String doInBackground(String... urls){
-			return downloadText(urls[0]);
-		}
-		protected void onPreExecute(){
-			// This is the dialog with a spinner, called here because the context is wrong in onPostExecute()
-			spinnerDialog = ProgressDialog.show(EntryActivity.this, "Saving library listing", "Please wait...", true);
-		}
-		@Override
-		protected void onPostExecute(String result){
-			 insertDBTask = (InsertDBTask) new InsertDBTask().execute(result); 
-			return;
-		}
-	}
-	
-	public class InsertDBTask extends AsyncTask<String, Void, Integer>{
-		protected Integer doInBackground(String... tags){
-			if(tags[0] != null){
-				String stringTags = tags[0];
-				
-				if(idb.isOpen()){
-					//idb.dropTable();
-				}else{
-					return 2;
-				}
-				
-				if(dbAdapter.isOpen()){
-					dbAdapter.dropTable();
-					dbAdapter.insertBatch(stringTags);
-				}else{
-					return 2;
-				}
-				
-				return 0;
-			}
-			return 1;
-		}
-		
-		@Override
-		protected void onPostExecute(Integer result){
-			if(result == 1){
-				Toast.makeText(getBaseContext(), "Error downloading: invalid url", Toast.LENGTH_LONG).show();
-			}else if(result == 2){
-				Toast.makeText(getBaseContext(), "Music library save cancelled", Toast.LENGTH_LONG).show();
-			}
-
-			if((spinnerDialog != null)){
-				spinnerDialog.dismiss();
-			}
-		}
-	}
-	
-	private String downloadText(String URL){
-		int kbDownloaded = 0;
-		// buffer size in bytes
-		// 20x1024 = 20KB
-		int BUFFER_SIZE = 50  * 1024;
-		
-		InputStream inputStream = null;
-				
-		try{
-			// connect to server
-			inputStream = OpenHttpConnection(URL);
-		}catch(IOException e){
-			Log.d("Networking", e.getLocalizedMessage());
-			return "";
-		}
-		
-		if(inputStream != null){
-			// wrap the input stream in an input stream reader
-			InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-			
-			int charRead;
-			String readString = "";
-			String string = "";
-			char[] inputBuffer = new char[BUFFER_SIZE];
-			
-			try{
-				while((charRead = inputStreamReader.read(inputBuffer)) > 0){
-					// convert the chars to a string
-					readString = String.copyValueOf(inputBuffer, 0, charRead);
-					string = string +  readString;
-					readString = null;
-					inputBuffer = new char[BUFFER_SIZE];
-					kbDownloaded = kbDownloaded + (BUFFER_SIZE / 1024);
-					progressDialog.setProgress(kbDownloaded);
-				}
-				inputStream.close();
-			}catch(IOException e){
-				Log.d("Networking", e.getLocalizedMessage());
-				return "";
-			}
-			
-			progressDialog.dismiss();
-			Log.d("Networking", string);
-			return string;
-		}else{
-			progressDialog.dismiss();
-			return null;
-		}
-				
-}
-	
-	private InputStream OpenHttpConnection(String urlString) throws IOException{
-		// connect to server
-		
-		InputStream inputStream = null;
-		int response = -1;
-		
-		URL url = new URL(urlString);
-		URLConnection conn = url.openConnection();
-		
-		if(!(conn instanceof HttpURLConnection)){
-			throw new IOException("Not an HTTP connection");
-		}
-		
-		try{
-			HttpURLConnection httpConn = (HttpURLConnection) conn;
-			httpConn.setAllowUserInteraction(false);
-			httpConn.setInstanceFollowRedirects(true);
-			httpConn.setRequestMethod("GET");
-			httpConn.connect();
-			response = httpConn.getResponseCode();
-			
-			if(response == HttpURLConnection.HTTP_OK){
-				inputStream = httpConn.getInputStream();
-			}else{
-				Log.v("WTF", "Not ok?!");
-			}
-			
-			// set the max for the progressDialog
-			jsonFileSize = httpConn.getContentLength();
-			int kbJSON = (int) jsonFileSize / 1024;
-			progressDialog.setMax(kbJSON);
-		}catch(Exception e){
-			Log.d("Networking", e.getLocalizedMessage());
-			throw new IOException("Error connecting");
-		}
-		return inputStream;
-	}
-	
-	protected Dialog onCreateDialog(int id){
-		switch(id){
-		case 1:
-			progressDialog = new ProgressDialog(this);
-			progressDialog.setProgressNumberFormat("%1d/%2d KiB");
-			progressDialog.setIcon(R.drawable.ic_launcher);
-			progressDialog.setTitle("Downloading library listing...");
-			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-
-			return progressDialog;
-		}
-		
-		return null;
-	}
 	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -326,7 +165,22 @@ public class EntryActivity extends Activity {
 
             case R.id.action_refresh:
 
-                // Do animation start
+                // TODO - JSON update interface
+
+                // use shared prefs to store the current update number
+
+                // WRITE
+                //SharedPreferences sharedPref = this.getSharedPreferences("com.example.musicplayernavigation.PREFERENCE_FILE_KEY", Context.MODE_PRIVATE);
+               // SharedPreferences.Editor editor = sharedPref.edit();
+               // editor.putInt("current_update_id", 1234);
+               // editor.commit();
+
+                // READ
+                // 0 is default
+                //int currentUpdateId = sharedPref.getInt("current_update_id", 0);
+
+                //Log.d("SharedPrefs", "Update ID: " + currentUpdateId);
+
                 LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 ImageView iv = (ImageView)inflater.inflate(R.layout.iv_refresh, null);
                 Animation rotation = AnimationUtils.loadAnimation(this, R.anim.rotate_refresh);
@@ -334,33 +188,7 @@ public class EntryActivity extends Activity {
                 iv.startAnimation(rotation);
                 item.setActionView(iv);
 
-                AlertDialog.Builder alert = new AlertDialog.Builder(this);
-                alert.setTitle("Update library");
-                alert.setMessage("Enter the URL of your library:");
-                // Set an EditText view to get user input
-                final EditText input = new EditText(this);
-                input.setText("http://kylechat416.plus.com:4231/.LibraryIndex/MusicIndex.json");
-                alert.setView(input);
-
-                alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        String jsonUrl = input.getText().toString();
-
-                        Intent i = new Intent(EntryActivity.this, UpdateLibraryService.class);
-                        i.putExtra("url", jsonUrl);
-                        startService(i);
-                        bindService(i, libraryConnection, Context.BIND_AUTO_CREATE);
-                    }
-                });
-
-                alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        // Canceled.
-                        resetUpdating();
-                    }
-                });
-
-                alert.show();
+                libraryServiceBinder.updateLibrary();
 
                 return true;
             case R.id.action_settings:

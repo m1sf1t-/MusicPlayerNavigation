@@ -19,6 +19,7 @@ import java.util.Iterator;
 public class DBAdapter {
 	static final String KEY_ROWID = "_id";
 	static final String KEY_PATH = "path";
+    static final String KEY_LOCAL_PATH = "localPath";
 	static final String KEY_ARTIST = "artist";
 	static final String KEY_ALBUM = "album";
 	static final String KEY_TITLE = "title";
@@ -40,6 +41,7 @@ public class DBAdapter {
 	static final String DATABASE_CREATE = 
 			"create table songs(_id integer primary key autoincrement, " +
 								  "path text not null unique, " +
+                                  "localPath text unique, " +
 								  "artist text not null, " +
 								  "album text not null, " +
 								  "title text not null, " +
@@ -121,25 +123,26 @@ public class DBAdapter {
 		
 		DBHelper.close();
 	}
-	
-	// insert a contact into the database
-	/*public long insertSong(){
+
+	public long insertSong(JsonFile jsonFile){
 
 		ContentValues initialValues = new ContentValues();
-		initialValues.put(KEY_PATH, path);
-		initialValues.put(KEY_ARTIST, artist);
-		initialValues.put(KEY_ALBUM, album);
-		initialValues.put(KEY_TITLE, title);
-		initialValues.put(KEY_ALBUM_ARTIST, albumArtist);
-		initialValues.put(KEY_COMPOSER, composer);
-		initialValues.put(KEY_GENRE, genre);
-		initialValues.put(KEY_TRACK_NO, trackNo);
-		initialValues.put(KEY_DISC_NO, discNo);
-		initialValues.put(KEY_YEAR, year);
-		initialValues.put(KEY_COMMENT, comment);
-		
+		initialValues.put(KEY_PATH, jsonFile.getPath());
+		initialValues.put(KEY_ARTIST, jsonFile.getArtist());
+		initialValues.put(KEY_ALBUM, jsonFile.getAlbum());
+		initialValues.put(KEY_TITLE, jsonFile.getTitle());
+		initialValues.put(KEY_ALBUM_ARTIST, jsonFile.getAlbumArtist());
+		initialValues.put(KEY_COMPOSER, jsonFile.getComposer());
+		initialValues.put(KEY_GENRE, jsonFile.getGenre());
+		initialValues.put(KEY_TRACK_NO, jsonFile.getTrackNo());
+		initialValues.put(KEY_DISC_NO, jsonFile.getDiscNo());
+		initialValues.put(KEY_YEAR, jsonFile.getYear());
+		initialValues.put(KEY_COMMENT, jsonFile.getComment());
+
+        Log.d("DATABASE", "UPDATE: Song inserted into songs table.");
+
 		return db.insert(DATABASE_TABLE, null, initialValues);
-	}*/
+	}
 	
 	// deletes a particular contact
 	public boolean deleteSong(long rowId){
@@ -193,20 +196,6 @@ public class DBAdapter {
 		return db.query(true, DATABASE_TABLE, values, where, null, KEY_ALBUM, null, KEY_ALBUM, null);
 	}
 	
-/*	public Cursor getSongsbyAlbum(String album){
-		String[] values = new String[]{KEY_ROWID,
-				   KEY_PATH,
-				   KEY_ARTIST,
-				   KEY_ALBUM,
-				   KEY_TITLE,
-				   };
-		
-		// WHERE clause is a string, 4th arg.
-		// eg "artist = 'Avenged Sevenfold'"
-		String where = "album = '" + album + "'";
-		return db.query(true, DATABASE_TABLE, values, where, null, KEY_TITLE, null, KEY_TRACK_NO, null);
-	}*/
-	
 	public Cursor getSongsbyAlbumName(String albumName){
 
         albumName = escapeApos(albumName);
@@ -216,6 +205,7 @@ public class DBAdapter {
 				   KEY_ARTIST,
 				   KEY_ALBUM,
 				   KEY_TITLE,
+                   KEY_LOCAL_PATH
 				   };
 		
 		// WHERE clause is a string, 4th arg.
@@ -309,141 +299,119 @@ public class DBAdapter {
 	
 	public void insertBatch(String tags){
 		Log.v("DATABASE", "Begin transaction");
-
         db.beginTransaction();
-		try{
-		String path, artist, album, title, albumArtist, composer, genre, trackNo, discNo, year, comment;
-										
-					// parse JSON raw string into values that can be put into DB
-					
-					JSONParser parser = new JSONParser();
-					// a multidimensional array containing metadata about each song
-					String[] artists = null;
-											
-					try{
-						// parser returns an object, which needs to be cast as a JSONObject
-						Log.d("JSONParser", "Parsing JSON file...");
-						Object obj = parser.parse(tags);
-						JSONObject jsonObject = (JSONObject) obj;
-						
-						// in the JSON file, "Songs" is a multidimensional array. 
-						// Each item in the array is an array containing song metadata in key/value pairs
-						Log.d("JSONParser", "Parsing songs...");
-						JSONArray songs = (JSONArray) jsonObject.get("Songs");
-						
-						// Create an Iterator that will eventually iterate through each array within "Songs"
-						Iterator<String> iterator = songs.iterator();
-						
-						// this array is only used for demo purposes
-						// It will be used to populate the ListView
-						artists = new String[songs.size()];
-						int artistPos = 0;
-						
-						// new string for db insert
-						//String[] songIndex = new String[songs.size()];
-						
-						
-						// iterate through each item within songs
-						while(iterator.hasNext()){
-							// get all meta data about the next song
-							Object objAllInfo = iterator.next();
-							// then to a string...
-							String objectSong = objAllInfo.toString();
-							
-							// then parse it back into an Object that can be cast to a JSONObject
-							// this JSONObject represents a whole song, accessible via key/value pairs
-							Object objColumn = parser.parse(objectSong);
-							JSONObject jsonObj = (JSONObject) objColumn;
-							
-							// get each value and put into strings
-							path = (String) jsonObj.get("Path");
-							
-//							path = path.replace("/var/www/", "http://192.168.1.69:4231/");
-//                            path = path.replace("/media/share/TestMusic/", "http://192.168.1.69:4231/");
 
-                            // CHECK THAT ROW DOESNT EXIST BY PATH
-                            if(!checkSongExistsByPath(path)){
-                                artist = (String) jsonObj.get("Artist");
-                                album = (String) jsonObj.get("Album");
-                                title = (String) jsonObj.get("Title");
-                                albumArtist = (String) jsonObj.get("AlbumArtist");
-                                composer = (String) jsonObj.get("Composer");
-                                genre = (String) jsonObj.get("Genre");
-                                trackNo = (String) jsonObj.get("Track");
-                                discNo = (String) jsonObj.get("DiscNo");
-                                year = (String) jsonObj.get("Year");
-                                comment = (String) jsonObj.get("Comment");
+        Log.d("JSONParser", "Parsing JSON file...");
+		JSONParser parser = new JSONParser();
+        JSONObject obj = null;
 
-                                // make sure no null values, replace with "Unknown ???"
-                                if((artist == null) || (artist == "")){
-                                    artist = "Unknown Artist";
-                                }
+        try {
+            Log.d("JSONParser", "Parsing songs...");
+            obj = (JSONObject) parser.parse(tags);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
 
-                                if((album == null) || (album == "")){
-                                    album = "Unknown Album";
-                                }
+        if(obj != null){
 
-                                if((title == null) || (title == "")){
-                                    title = "Unknown Title";
-                                }
+            JSONArray songs = (JSONArray) obj.get("Songs");
 
-                                Log.d("DB INSERT", "artist:" + artist);
+            Iterator<String> iterator = songs.iterator();
+            while(iterator.hasNext()){
 
-                                path = path.replace("'", "''");
+                Object objAllInfo = iterator.next();
+                String objectSong = objAllInfo.toString();
+                Object objParsed = null;
 
-                                // put in DB
-                                ContentValues initialValues = new ContentValues();
-                                initialValues.put(KEY_PATH, path);
-                                initialValues.put(KEY_ARTIST, artist);
-                                initialValues.put(KEY_ALBUM, album);
-                                initialValues.put(KEY_TITLE, title);
-                                initialValues.put(KEY_ALBUM_ARTIST, albumArtist);
-                                initialValues.put(KEY_COMPOSER, composer);
-                                initialValues.put(KEY_GENRE, genre);
-                                initialValues.put(KEY_TRACK_NO, trackNo);
-                                initialValues.put(KEY_DISC_NO, discNo);
-                                initialValues.put(KEY_YEAR, year);
-                                initialValues.put(KEY_COMMENT, comment);
+                try {
+                    objParsed = parser.parse(objectSong);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
 
-                                //	Log.v("DATABASE", "ContentValues: " + initialValues.toString());
-                                if(db != null && db.isOpen()){
-                                    db.insert(DATABASE_TABLE, null, initialValues);
-                                }else{
-                                    //db = null;
-                                    break;
-                                }
-                            }
-					
-							// add to the array of artists for the demo ListView
-						//	artists[artistPos] = artist;
-						//	artistPos++;
-						}
-						
-						//finishTransaction();
-												
-					} catch (ParseException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-													
-		}catch(Exception e){
-			e.printStackTrace();
-		}finally{
-			Log.v("DATABASE", "End transaction");
-			try{
-				if(db != null){
-					db.setTransactionSuccessful();
-					db.endTransaction();
-					Log.d("DATABASE", "Transaction finished");
-					//db.close();
-					Log.v("DATABASE", "DB insert successful");
-				} 
-			}catch(IllegalStateException e){
-				//db.close();
-				Log.v("DATABASE", "DB insert cancelled");
-			}
-		}
+                if(objParsed != null){
+                    JSONObject jsonObj = (JSONObject) objParsed;
+                    JsonFile jsonFile = jsonFileFromJsonObject(jsonObj);
+
+                    if(!checkSongExistsByPath(jsonFile.getPath())){
+                        if(db != null && db.isOpen()){
+                            db.insert(DATABASE_TABLE, null, contentValuesFromSong(jsonFile));
+                        }else{
+                            break;
+                        }
+                    }
+                }
+            }
+
+            Log.v("DATABASE", "End transaction");
+            try{
+                if(db != null){
+                    db.setTransactionSuccessful();
+                    db.endTransaction();
+                    Log.d("DATABASE", "Transaction finished");
+                    //db.close();
+                    Log.v("DATABASE", "DB insert successful");
+                }
+            }catch(IllegalStateException e){
+                //db.close();
+                Log.v("DATABASE", "DB insert cancelled");
+            }
+        }
 	}
+
+    public JsonFile jsonFileFromJsonObject(JSONObject jsonObject){
+
+        String artist = (String) jsonObject.get("Artist");
+        String album = (String) jsonObject.get("Album");
+        String title = (String) jsonObject.get("Title");
+        String albumArtist = (String) jsonObject.get("AlbumArtist");
+        String composer = (String) jsonObject.get("Composer");
+        String genre = (String) jsonObject.get("Genre");
+        String trackNo = (String) jsonObject.get("Track");
+        String discNo = (String) jsonObject.get("DiscNo");
+        String year = (String) jsonObject.get("Year");
+        String comment = (String) jsonObject.get("Comment");
+        String path = (String) jsonObject.get("Path");
+        String action = (String) jsonObject.get("Action");
+
+        // make sure no null values, replace with "Unknown ???"
+        if((artist == null) || (artist == "")){
+            artist = "Unknown Artist";
+        }
+
+        if((album == null) || (album == "")){
+            album = "Unknown Album";
+        }
+
+        if((title == null) || (title == "")){
+            title = "Unknown Title";
+        }
+
+        path = escapeApos(path);
+        artist = escapeApos(artist);
+        album = escapeApos(album);
+        title = escapeApos(title);
+
+        return new JsonFile(-1, path, artist, album, title, albumArtist, composer, genre, trackNo, discNo, year, comment, action);
+    }
+
+    public ContentValues contentValuesFromSong(JsonFile jsonFile){
+
+        ContentValues initialValues = new ContentValues();
+        initialValues.put(KEY_PATH, jsonFile.getPath());
+        initialValues.put(KEY_ARTIST, jsonFile.getArtist());
+        initialValues.put(KEY_ALBUM, jsonFile.getAlbum());
+        initialValues.put(KEY_TITLE, jsonFile.getTitle());
+        initialValues.put(KEY_ALBUM_ARTIST, jsonFile.getAlbumArtist());
+        initialValues.put(KEY_COMPOSER, jsonFile.getComposer());
+        initialValues.put(KEY_GENRE, jsonFile.getGenre());
+        initialValues.put(KEY_TRACK_NO, jsonFile.getTrackNo());
+        initialValues.put(KEY_DISC_NO, jsonFile.getDiscNo());
+        initialValues.put(KEY_YEAR, jsonFile.getYear());
+        initialValues.put(KEY_COMMENT, jsonFile.getComment());
+
+        return initialValues;
+    }
 
     public String escapeApos(String string){
         return string.replace("'", "''");

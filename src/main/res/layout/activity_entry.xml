@@ -13,13 +13,13 @@
         android:id="@+id/json_url"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:text="http://kubuntu-acer:4231/.LibraryIndex/MusicIndex.json" />
+        android:text="http://kylechat416.plus.com:4231/" />
     
     <Button
         android:id="@+id/update_button"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:text="Update library"
+        android:text="Sync New library"
         android:onClick="onClick" />
     
     <Button

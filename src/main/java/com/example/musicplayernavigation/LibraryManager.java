@@ -28,15 +28,15 @@ public class LibraryManager {
 	}
 
 	public void updateLibrary(String url){
-		Log.d("LIBRARY MANAGER", "updateLibrary() called");
+		Log.d("LIBRARY MANAGER", "createLibrary() called");
 		String regex = "^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
 		if(url.matches(regex)){
 			// download JSON 
 			 new DownloadJSONTask().execute(url);
-			 Log.d("LIBRARY MANAGER", "DownloadJSONTask().execute() called");
+			 Log.d("LIBRARY MANAGER", "InitialLibraryTask().execute() called");
 		}else{
-			// not a valid url regex
-			Log.d("LIBRARY MANAGER", "url does not match regex");
+			// not a valid url urlRegex
+			Log.d("LIBRARY MANAGER", "url does not match urlRegex");
 		}
 	}
 	

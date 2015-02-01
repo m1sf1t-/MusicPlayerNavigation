@@ -79,11 +79,7 @@ public class SongsActivity extends ListActivity {
 		
 		playingText = (TextView) findViewById(R.id.playing_text);
 		percentText = (TextView) findViewById(R.id.percent_text);
-		
-		
-		// start service
-		intent = new Intent(SongsActivity.this, PlayerService.class);
-		bindService(intent, connection, Context.BIND_AUTO_CREATE);
+
 	}
 	
 	@Override
@@ -96,7 +92,20 @@ public class SongsActivity extends ListActivity {
 		
 		// register receiver
 		registerReceiver(intentReceiver, intentFilter);
+
+        // start service
+        intent = new Intent(SongsActivity.this, PlayerService.class);
+        bindService(intent, connection, Context.BIND_AUTO_CREATE);
 	}
+
+    @Override
+    public void onPause(){
+        super.onPause();
+
+        unregisterReceiver(intentReceiver);
+        unbindService(connection);
+    }
+
 	
 	@Override protected void onStart(){
 		super.onStart();

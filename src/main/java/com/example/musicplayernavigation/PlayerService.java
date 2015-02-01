@@ -49,6 +49,9 @@ public class PlayerService extends Service implements OnErrorListener,
 	}
 	
 	public void initialiseMediaPlayer(String songUrl, String songTitle){
+
+        songUrl = songUrl.replace("''", "'");
+
 		this.songUrl = songUrl;
 		this.songTitle = songTitle;
 		

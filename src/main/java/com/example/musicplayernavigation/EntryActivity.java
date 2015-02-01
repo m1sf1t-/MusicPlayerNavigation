@@ -339,7 +339,7 @@ public class EntryActivity extends Activity {
                 alert.setMessage("Enter the URL of your library:");
                 // Set an EditText view to get user input
                 final EditText input = new EditText(this);
-                input.setText("http://84.92.54.190/MusicIndex.json");
+                input.setText("http://kylechat416.plus.com:4231/.LibraryIndex/MusicIndex.json");
                 alert.setView(input);
 
                 alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {

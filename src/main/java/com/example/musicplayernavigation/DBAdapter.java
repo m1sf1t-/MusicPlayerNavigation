@@ -123,10 +123,8 @@ public class DBAdapter {
 	}
 	
 	// insert a contact into the database
-	public long insertSong(String path,String artist, String album, String title, String albumArtist, 
-							String composer, String genre, String trackNo, String discNo, String year, 
-							String comment){
-		
+	/*public long insertSong(){
+
 		ContentValues initialValues = new ContentValues();
 		initialValues.put(KEY_PATH, path);
 		initialValues.put(KEY_ARTIST, artist);
@@ -141,7 +139,7 @@ public class DBAdapter {
 		initialValues.put(KEY_COMMENT, comment);
 		
 		return db.insert(DATABASE_TABLE, null, initialValues);
-	}
+	}*/
 	
 	// deletes a particular contact
 	public boolean deleteSong(long rowId){
@@ -179,7 +177,9 @@ public class DBAdapter {
 	}
 	
 	public Cursor getAlbumsForArtist(String artist){
-		
+
+        artist = escapeApos(artist);
+
 		String[] values = new String[]{KEY_ROWID,
 				 //  KEY_PATH,
 				//   KEY_ARTIST,
@@ -208,6 +208,9 @@ public class DBAdapter {
 	}*/
 	
 	public Cursor getSongsbyAlbumName(String albumName){
+
+        albumName = escapeApos(albumName);
+
 		String[] values = new String[]{KEY_ROWID,
 				   KEY_PATH,
 				   KEY_ARTIST,
@@ -250,6 +253,18 @@ public class DBAdapter {
 							String albumArtist, String composer, String genre, String trackNo, 
 							String discNo, String year, String comment){
 		ContentValues args = new ContentValues();
+
+        path = escapeApos(path);
+        artist = escapeApos(artist);
+        album = escapeApos(album);
+        title = escapeApos(title);
+        albumArtist = escapeApos(albumArtist);
+        composer = escapeApos(composer);
+        genre = escapeApos(genre);
+        trackNo = escapeApos(trackNo);
+        discNo = escapeApos(discNo);
+        year = escapeApos(year);
+        comment = escapeApos(comment);
 		
 		args.put(KEY_PATH, path);
 		args.put(KEY_ARTIST, artist);
@@ -268,7 +283,7 @@ public class DBAdapter {
 
     public boolean checkSongExistsByPath(String path){
 
-        path = path.replace("'", "''");
+        path = escapeApos(path);
         boolean exists = false;
 
         try{
@@ -287,7 +302,7 @@ public class DBAdapter {
                 mCursor.close();
             }
         }catch(Exception e){
-            Log.d("EXCEPTION", "DBAdapter.checkSongExistsByPath(): " + e.getMessage());
+            //Log.d("EXCEPTION", "DBAdapter.checkSongExistsByPath(): " + e.getMessage());
         }
         return exists;
     }
@@ -343,8 +358,8 @@ public class DBAdapter {
 							// get each value and put into strings
 							path = (String) jsonObj.get("Path");
 							
-							path = path.replace("/var/www/", "http://192.168.1.69:4231/");
-                            path = path.replace("/media/share/TestMusic/", "http://192.168.1.69:4231/");
+//							path = path.replace("/var/www/", "http://192.168.1.69:4231/");
+//                            path = path.replace("/media/share/TestMusic/", "http://192.168.1.69:4231/");
 
                             // CHECK THAT ROW DOESNT EXIST BY PATH
                             if(!checkSongExistsByPath(path)){
@@ -429,4 +444,8 @@ public class DBAdapter {
 			}
 		}
 	}
+
+    public String escapeApos(String string){
+        return string.replace("'", "''");
+    }
 }

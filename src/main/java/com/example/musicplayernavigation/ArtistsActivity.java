@@ -264,7 +264,7 @@ public class ArtistsActivity extends Activity {
                 item.setActionView(iv);
 
                 LibraryManager lm = new LibraryManager(this);
-                lm.updateLibrary("http://84.92.54.190/MusicLibrary.json");
+                lm.updateLibrary("http://kubuntu-acer:4231/.LibraryIndex/MusicLibrary.json");
                 Toast.makeText(this, "Refreshing music library", Toast.LENGTH_LONG).show();
 
                 new GetArtistsTask().execute();

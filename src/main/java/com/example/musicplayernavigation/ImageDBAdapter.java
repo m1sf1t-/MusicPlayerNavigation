@@ -106,6 +106,9 @@ public class ImageDBAdapter {
 		if(album == null){
 			album = "";
 		}
+
+        artist = escapeApos(artist);
+        album = escapeApos(album);
 		
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
 		image.compress(Bitmap.CompressFormat.PNG, 100, stream);
@@ -147,6 +150,8 @@ public class ImageDBAdapter {
 	}
 	
 	public Bitmap getImageByArtistName(String artist){
+
+        artist = escapeApos(artist);
 		
 		try{
 			String[] values = new String[]{KEY_ROWID,
@@ -172,6 +177,9 @@ public class ImageDBAdapter {
 	}
 	
 	public boolean checkImageExistsByArtistName(String artist){
+
+        artist = escapeApos(artist);
+
 		try{
 			String[] values = new String[]{KEY_ROWID};
 			
@@ -194,6 +202,9 @@ public class ImageDBAdapter {
 	}
 	
 	public boolean checkImageExistsByAlbumName(String album){
+
+        album = escapeApos(album);
+
 		try{
 			String[] values = new String[]{KEY_ROWID};
 			
@@ -216,13 +227,11 @@ public class ImageDBAdapter {
 	}
 	
 	public Bitmap getImageByAlbumName(String name){
-		
+
+        name = escapeApos(name);
+
 		try{
-			String[] values = new String[]{KEY_ROWID,
-					   KEY_ARTIST,
-					   KEY_ALBUM,
-					   KEY_IMAGE
-					   };
+			String[] values = new String[]{KEY_IMAGE };
 			
 			Cursor mCursor = db.query(true, DATABASE_TABLE, values, KEY_ALBUM + "='" + name + "'", null, null, null, null, null);
 			
@@ -230,12 +239,12 @@ public class ImageDBAdapter {
 				mCursor.moveToFirst();
 			}
 			
-			byte[] byteArray = mCursor.getBlob(3);
+			byte[] byteArray = mCursor.getBlob(0);
 			Bitmap image = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length);
 			
 			return image;
 		}catch(Exception e){
-			
+			e.printStackTrace();
 		}
 		return null;
 	}
